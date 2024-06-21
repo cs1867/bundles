@@ -1,32 +1,14 @@
-#Workflow for GitHub Actions
-
 name: bundles-workflow
   
-on: 
-  workflow_dispatch: 
+on:  
+  workflow_dispatch:
     inputs:  
       OS: 
         description: 'OS to build'
         required: true
-      MINORPACKAGEID: 
-        description: 'Minor Package run id'
+      BUILD_VARS_JSON:
+        description: 'Build var json file'
         required: true
-      I2UTILID:
-        description: 'I2util build run id'
-        required: true  
-      OWAMPID:
-        description: 'Owamp build run id'
-        required: true 
-      PSCHEDULERID:
-        description: 'Pscheduler build run id'
-        required: true
-      PERLSHAREDID:
-        description: 'Perl Shared build run id'
-        required: true 
-      HOSTMETRICSID:
-        description: 'Host Metrics build run id'
-        required: true
-        
   workflow_run:
     workflows: "Create Artifacts and pass runid"
     branches: 'github-workflow'
@@ -34,51 +16,73 @@ on:
       - completed
 
 jobs:
-       
   build-bundles:
-
-     runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
      
-     steps:
-        - name: Check out Repo
-          uses: actions/checkout@v4
-          with:
-           ref: 5.2.0
-          
-        - name: Create a temporary artifact downloads folder
-          run: mkdir aritfacts
+    steps:
+      - name: Check out Repo
+        uses: actions/checkout@v4
+        with:
+          ref: 5.1.0
 
-        - name: run docker oneshot builder
-          run: |
-           curl -s https://raw.githubusercontent.com/perfsonar/docker-oneshot-builder/main/build | sh -s - . '${{ github.event.inputs.OS }}'  
-        
-        - uses: actions/upload-artifact@v3
-          with:
-          #Name the artifact uniquely
-            name: ${{ github.event.repository.name }}-${{ github.event.inputs.OS }}
-            #Where the finished product lives after the build
-            path: unibuild-repo
-            #Don't keep these for long.  This is just a test.
-            retention-days: 5
-         
-        - name: Pass workflow to psconfig repo
-          uses: actions/github-script@v6
-          with:
-            github-token: ${{ secrets.GIT_ACTIONS }}
-            script: |
-              await github.rest.actions.createWorkflowDispatch({
-              owner: 'cs1867',
-              repo: 'psconfig',
-              workflow_id: 'psconfig-workflow.yml',
-              ref: 'github-docker',
-               inputs: {
-                OS: '${{ github.event.inputs.OS }}',
-                MINORPACKAGEID: '${{ github.event.inputs.MINORPACKAGEID }}',
-                I2UTILID: '${{ github.event.inputs.I2UTILID }}',
-                OWAMPID: '${{ github.event.inputs.OWAMPID }}',
-                PSCHEDULERID: '${{ github.event.inputs.PSCHEDULERID }}',
-                PERLSHAREID: '${{ github.event.inputs.PERLSHAREDID }}',
-                HOSTMETRICSID: '${{ github.event.inputs.HOSTMETRICSID }}',
-                BUNDLESID: '${{ github.run_id }}'
-              }
-              }
+      - name: Pretty-print BUILD_VARS_JSON
+        run: |
+          echo '${{ github.event.inputs.BUILD_VARS_JSON }}' | jq .
+
+      - name: Delete current repo from build
+        id: modify_json
+        run: |
+          # Remove the first repo from the repos array
+          modified_json=$(echo '${{ github.event.inputs.BUILD_VARS_JSON }}' | jq 'del(.repos[0])')
+          echo "Modified JSON:"
+          echo "$modified_json" | jq .
+          
+          # Convert the modified JSON back to a single-line string and export it as an environment variable
+          BUILD_VARS_JSON=$(echo "$modified_json" | jq -c '.')
+          echo "BUILD_VARS_JSON=$BUILD_VARS_JSON" >> $GITHUB_ENV
+          echo "**** next next ****"
+          echo "BUILD_VARS_JSON=$BUILD_VARS_JSON"
+
+   
+      - name: Use modified BUILD_VARS_JSON
+        run: |
+          echo "Using the modified BUILD_VARS_JSON environment variable:"
+          echo "$BUILD_VARS_JSON" | jq .
+          
+      - name: Look up the next repo name to build
+        id: extract_repo_name
+        run: |
+          echo "BUILD_VARS_JSON value is: $BUILD_VARS_JSON"
+          NEXTREPO=$(echo  "$BUILD_VARS_JSON" | jq -r '.repos[0].name' )
+          echo "NEXTREPO=$NEXTREPO" >> $GITHUB_ENV  
+            
+      - name: Display NEXTREPO value
+        run: echo "The value of NEXTREPO is $NEXTREPO"  
+
+      - name: Add GitHub run ID to buildids
+        id: add_run_id
+        run: |
+          GITHUB_RUN_ID=${{ github.run_id }}
+    
+          modified_json=$(echo "$BUILD_VARS_JSON" | jq --arg run_id "$GITHUB_RUN_ID" '.buildids.${{ github.event.repository.name }} = $run_id')
+    
+          echo "Modified JSON with GitHub run ID:"
+          echo "$modified_json" | jq .
+    
+          BUILD_VARS_JSON=$(echo "$modified_json" | jq -c '.')
+          echo "BUILD_VARS_JSON=$BUILD_VARS_JSON" >> $GITHUB_ENV
+          echo "BUILD_VARS_JSON=$BUILD_VARS_JSON"
+            
+      - name: Create a temporary artifact downloads folder
+        run: mkdir aritfacts
+
+      - name: run docker oneshot builder
+        run: |
+          curl -s https://raw.githubusercontent.com/perfsonar/docker-oneshot-builder/main/build | sh -s - . '${{ github.event.inputs.OS }}'  
+
+      - uses: actions/upload-artifact@v3
+        with:
+           name: ${{ github.event.repository.name }}-${{ github.event.inputs.OS }}
+           path: unibuild-repo
+           #Don't keep these for long.  This is just a test.
+           retention-days: 5
