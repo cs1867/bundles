@@ -27,7 +27,7 @@ jobs:
         - name: Check out Repo
           uses: actions/checkout@v4
           with:
-           ref: 5.1.0
+           ref: 5.2.0
 
         - name: list dirs
           run: |
@@ -39,7 +39,7 @@ jobs:
           run: |
             git clone https://github.com/cs1867/project.git project
             ls -al project
-            cp project/toolbox/workflows/toolkit_test.json .
+            cp project/toolbox/workflows/repo_test.json .
             cp project/toolbox/workflows/github-workflow.sh . 
             ls -al 
  
