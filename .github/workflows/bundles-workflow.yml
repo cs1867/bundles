@@ -32,6 +32,7 @@ jobs:
         - name: list dirs
           run: |
             ls -al 
+            echo '${{ github.run_id }}'
 
         - name: Fetch build_vars.json from projects
           env:
