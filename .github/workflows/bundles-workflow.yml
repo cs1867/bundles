@@ -37,6 +37,7 @@ jobs:
             ls -al project
             cp project/toolbox/workflows/toolkit_test.json .
             cp project/toolbox/workflows/github-workflow.sh . 
+            ls -al 
  
         - name: Set build_vars.json as workflow variable
           id: set_build_vars
@@ -76,9 +77,9 @@ jobs:
           env:
             GITHUB_TOKEN: ${{ secrets.GIT_ACTIONS }}
            
-        - name: run docker oneshot builder
-          run: |
-           curl -s https://raw.githubusercontent.com/perfsonar/docker-oneshot-builder/main/build | sh -s - --run github-workflow.sh . '${{ matrix.os }}'
+       # - name: run docker oneshot builder
+        #  run: |
+         #  curl -s https://raw.githubusercontent.com/perfsonar/docker-oneshot-builder/main/build | sh -s - --run github-workflow.sh . '${{ matrix.os }}'
        
         - uses: actions/upload-artifact@v3
           with:
