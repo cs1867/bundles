@@ -81,9 +81,9 @@ jobs:
           env:
             GITHUB_TOKEN: ${{ secrets.GIT_ACTIONS }}
            
-        #- name: run docker oneshot builder
-        #  run: |
-        #   curl -s https://raw.githubusercontent.com/perfsonar/docker-oneshot-builder/main/build | sh -s - --run github-workflow-addrepo.sh . '${{ matrix.os }}'
+        - name: run docker oneshot builder
+          run: |
+           curl -s https://raw.githubusercontent.com/perfsonar/docker-oneshot-builder/main/build | sh -s - --run github-workflow.sh . '${{ matrix.os }}'
        
         - uses: actions/upload-artifact@v3
           with:
