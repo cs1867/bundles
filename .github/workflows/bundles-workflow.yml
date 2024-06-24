@@ -46,18 +46,18 @@ jobs:
         - name: Set build_vars.json as workflow variable
           id: set_build_vars
           run: |
-           BUILD_VARS_JSON=$(jq -c . toolkit_test.json )
+           BUILD_VARS_JSON=$(jq -c . repo_test.json )
            echo "BUILD_VARS_JSON=${BUILD_VARS_JSON}" >> $GITHUB_ENV
            echo "BUILD_VARS_JSON=${BUILD_VARS_JSON}"
         
-        - name:  cat toolkit_test.json 
+        - name:  cat repo_test.json
           run: |
-            cat toolkit_test.json 
+            cat repo_test.json 
             
         - name: Extract dependencies
           id: extract_deps
           run: |
-            cat toolkit_test.json  | jq -r '.repos[] | select(.name == "${{ github.event.repository.name }}") | .deps[]' > deps.txt
+            cat repo_test.json  | jq -r '.repos[] | select(.name == "${{ github.event.repository.name }}") | .deps[]' > deps.txt
             echo "Dependencies:"
             cat deps.txt
             
@@ -67,7 +67,7 @@ jobs:
             cat deps.txt
             while IFS= read -r repo; do
               echo "Downloading artifact for $repo"
-              run_id=$(cat toolkit_test.json  | jq -r ".buildids | .[\"$repo\"]")
+              run_id=$(cat repo_test.json | jq -r ".buildids | .[\"$repo\"]")
               echo "rund id $run_id"
               echo "repo $repo"
               gh run download $run_id --repo cs1867/$repo -D artifacts/$repo --name "$repo-${{ matrix.os }}"  
