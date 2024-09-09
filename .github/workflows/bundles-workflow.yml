@@ -1,6 +1,6 @@
 name: bundles-workflow
      
-on: 
+on:  
   workflow_dispatch:
     inputs:   
       OS:  
