@@ -58,7 +58,7 @@ jobs:
               'ol8'|'el9')
                  cp project/toolbox/workflows/github-workflow-el-skip-install.sh .
                  ;;
-              'd11'|'d12'|'u20'|'u24')
+              'd11'|'d12'|'u20'|'u22'|'u24')
                 cp project/toolbox/workflows/github-workflow-db-skip-install.sh .
                 ;;
             esac
